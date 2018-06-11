@@ -48,17 +48,13 @@
 		// Helper function, not directly acessible by instance object
 	};
 
-	var readFile = function(input, filelist, callback) {
-		if (input.files && input.files[0]) {
-			for (let i = 0; i <  input.files.length; i++) {
-				var reader = new FileReader();
-				let name = input.files[i].name;
-				reader.addEventListener("load", function(e) {
-					callback(filelist, e.target.result, name);
-				});
-				reader.readAsDataURL(input.files[i]);
-			}
-		}
+	var readFile = function(file, filelist, callback) {
+		const reader = new FileReader();
+		const name = file.name;
+		reader.addEventListener("load", function(e) {
+			callback(file, filelist, e.target.result, name);
+		});
+		reader.readAsDataURL(file);
 	}
 
 	/**
@@ -125,18 +121,8 @@
 
 			input.onchange = (e) => {
 				e.preventDefault();
-
-				for (let file of input.files)
-					if (file !== input.files[0]) 
-					files.items.add(file)
-
-				readFile(input, list, this.addFile);
+				this.onChange(e, list, files);
 			}
-
-			input.oninput = (e) => {
-				e.preventDefault();
-				this.onInput(e, input, files);
-			};
 
 			var button = document.createElement('button');
 			button.classList.add('fileuploader__button');
@@ -151,22 +137,20 @@
 
 			this.initDragDrop(field, input, list);
 		},
-		onInput: function(e, input, files) {
-			e.preventDefault();
-			
+		onChange: function(e, list, files) {
 			if (this.maxFileSize) {
-				
-				for (let i = 0; i < input.files.length; i++) {
-					if (input.files.item(i).size > this.maxFileSize) continue;
-					else files.items.add(input.files.item(i));
+				for (var i = 0; i < e.target.files.length; i++) {
+					if (e.target.files.item(i).size > this.maxFileSize) continue;
+					else {
+						files.items.add(e.target.files.item(i));
+                        readFile(e.target.files.item(i), list, this.addFile.bind(this));
+                    }
 				}
-				input.files = files.files;
-
 			} else {
-				input.files = e.dataTransfer.files;
+				// input.files = e.dataTransfer.files;
 			}
 		},
-		addFile: function(list, img, name) {
+		addFile: function(file, list, img, name) {
 			var fileItem = document.createElement('li');
 			fileItem.classList.add('fileuploader__list-item');
 			fileItem.setAttribute('name', name);
@@ -179,8 +163,21 @@
 				var fileItem = e.target.parentNode.parentNode;
 				var id = fileItem.getAttribute('name');
 				console.log(id);
-				
 			}
+
+            var input = document.createElement('input');
+            input.classList.add('fileuploader__input');
+            input.type = 'file';
+			console.log(this);
+            if (this.options.maxFiles === null || this.options.maxFiles > 1) {
+                input.name = this.options.name + '[]';
+            } else {
+                input.name = this.options.name;
+            }
+            var dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            list.parentNode.appendChild(input);
 		},
 		initDragDrop: function(field, input, list) {
 			field.ondragend = function(e) {
