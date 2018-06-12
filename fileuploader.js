@@ -139,13 +139,23 @@
 		},
 		onChange: function(e, list, files) {
 			if (this.maxFileSize) {
-				for (var i = 0; i < e.target.files.length; i++) {
-					if (e.target.files.item(i).size > this.maxFileSize) continue;
-					else {
-						files.items.add(e.target.files.item(i));
-                        readFile(e.target.files.item(i), list, this.addFile.bind(this));
+				if (!e.dataTransfer) {
+                    for (var i = 0; i < e.target.files.length; i++) {
+                        if (e.target.files.item(i).size > this.maxFileSize) continue;
+                        else {
+                            files.items.add(e.target.files.item(i));
+                            readFile(e.target.files.item(i), list, this.addFile.bind(this));
+                        }
                     }
-				}
+				} else {
+                    for (var i = 0; i < e.dataTransfer.files.length; i++) {
+                        if (e.dataTransfer.files.item(i).size > this.maxFileSize) continue;
+                        else {
+                            files.items.add(e.dataTransfer.files.item(i));
+                            readFile(e.dataTransfer.files.item(i), list, this.addFile.bind(this));
+                        }
+                    }
+                }
 			} else {
 				// input.files = e.dataTransfer.files;
 			}
@@ -158,17 +168,9 @@
 			fileItem.innerHTML = imgThumb;
 			list.appendChild(fileItem);
 
-			var removeButton = fileItem.querySelector('.fileuploader__thumb-remove');
-			removeButton.onclick = function(e) {
-				var fileItem = e.target.parentNode.parentNode;
-				var id = fileItem.getAttribute('name');
-				console.log(id);
-			}
-
             var input = document.createElement('input');
             input.classList.add('fileuploader__input');
             input.type = 'file';
-			console.log(this);
             if (this.options.maxFiles === null || this.options.maxFiles > 1) {
                 input.name = this.options.name + '[]';
             } else {
@@ -178,6 +180,12 @@
             dt.items.add(file);
             input.files = dt.files;
             list.parentNode.appendChild(input);
+
+            var removeButton = fileItem.querySelector('.fileuploader__thumb-remove');
+            removeButton.onclick = function() {
+                fileItem.parentNode.removeChild(fileItem);
+                input.parentNode.removeChild(input);
+            }
 		},
 		initDragDrop: function(field, input, list) {
 			field.ondragend = function(e) {
@@ -189,16 +197,17 @@
 				e.dataTransfer.dropEffect = 'copy';
 			}
 			field.ondrop = function(e) {
-				if (typeof this.maxFileSize !== 'undefined') {
-					var dataTransfer = new DataTransfer();
-					for (var i = 0; i <  e.dataTransfer.files.length; i++) {
-						if (e.dataTransfer.files.item(i).size > this.maxFileSize) continue;
-						else dataTransfer.items.add(e.dataTransfer.files.item(i));
-					}
-					input.files = dataTransfer.files;
-				} else {
-					input.files = e.dataTransfer.files;
-				}
+				input.onchange(e);
+				// if (typeof this.maxFileSize !== 'undefined') {
+				// 	var dataTransfer = new DataTransfer();
+				// 	for (var i = 0; i <  e.dataTransfer.files.length; i++) {
+				// 		if (e.dataTransfer.files.item(i).size > this.maxFileSize) continue;
+				// 		else dataTransfer.items.add(e.dataTransfer.files.item(i));
+				// 	}
+				// 	input.files = dataTransfer.files;
+				// } else {
+				// 	input.files = e.dataTransfer.files;
+				// }
 			}
 		}
 	};
